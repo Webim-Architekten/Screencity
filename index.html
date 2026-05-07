@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ScreenCity · AI Preview Engine</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+  *{box-sizing:border-box;font-family:'DM Sans',sans-serif;}
+  input,select,textarea{font-family:'DM Sans',sans-serif;}
+  body{margin:0;padding:20px;background:#08080F;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;}
+  .sc-root{background:#08080F;color:#E0E0EE;width:100%;max-width:700px;border-radius:12px;overflow:hidden;border:1px solid #1A1A2E;}
+  .sc-input-wrap{padding:28px 28px 24px;}
+  .sc-logo{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
+  .sc-logo-mark{width:28px;height:28px;background:linear-gradient(135deg,#F5A623,#E8621A);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;}
+  .sc-logo-text{font-size:12px;font-weight:500;color:#7070A0;letter-spacing:1.5px;text-transform:uppercase;}
+  .sc-title{font-size:22px;font-weight:500;margin:0 0 6px;color:#E0E0F0;}
+  .sc-sub{font-size:13px;color:#6060A0;line-height:1.6;margin:0 0 22px;}
+  .sc-field{margin-bottom:14px;}
+  .sc-label{font-size:11px;font-weight:500;color:#8080B0;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:6px;}
+  .sc-input{width:100%;padding:10px 14px;background:#12121E;border:1px solid #2A2A42;border-radius:8px;color:#E0E0F0;font-size:14px;outline:none;transition:border-color .2s;}
+  .sc-input:focus{border-color:#F5A623;}
+  .sc-input::placeholder{color:#404060;}
+  .sc-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .sc-btn{width:100%;padding:13px;background:linear-gradient(135deg,#F5A623,#E8621A);color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;letter-spacing:0.3px;margin-top:6px;transition:opacity .2s;}
+  .sc-btn:hover{opacity:0.9;}
+  .sc-btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .sc-error{background:#1E0808;border:1px solid #5A1010;color:#F08080;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:10px;}
+  .sc-preview-header{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1A1A2E;}
+  .sc-preview-title{font-size:14px;font-weight:500;color:#E0E0F0;}
+  .sc-preview-sub{font-size:11px;color:#6060A0;font-family:'DM Mono',monospace;margin-top:2px;}
+  .sc-back{padding:6px 14px;background:transparent;border:1px solid #2A2A42;border-radius:6px;color:#8080B0;font-size:12px;cursor:pointer;}
+  .sc-back:hover{border-color:#4A4A6A;color:#E0E0F0;}
+  .sc-street{position:relative;width:100%;aspect-ratio:16/7;overflow:hidden;}
+  .sc-variants{padding:14px 20px;display:flex;gap:8px;}
+  .sc-vcard{flex:1;padding:10px 12px;border-radius:8px;border:1.5px solid transparent;cursor:pointer;transition:all .18s;}
+  .sc-vcard:hover{transform:translateY(-1px);}
+  .sc-vcard-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:2px;}
+  .sc-vcard-mood{font-size:10px;opacity:0.7;font-family:'DM Mono',monospace;}
+  .sc-vcard-swatch{height:3px;border-radius:2px;margin-top:6px;}
+  .sc-copy-panel{margin:0 20px 14px;padding:14px;background:#0E0E1A;border:1px solid #1E1E30;border-radius:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .sc-copy-key{font-size:9px;font-weight:500;color:#5050A0;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;font-family:'DM Mono',monospace;}
+  .sc-copy-val{font-size:13px;color:#E0E0F0;font-weight:500;}
+  .sc-actions{padding:0 20px 14px;display:flex;gap:10px;}
+  .sc-wa-btn{flex:1;padding:11px;background:#1A3A2A;border:1px solid #25D366;border-radius:8px;color:#25D366;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}
+  .sc-wa-btn:hover{background:#25D36622;}
+  .sc-book-btn{flex:1;padding:11px;background:linear-gradient(135deg,#F5A623,#E8621A);border:none;border-radius:8px;color:white;font-size:13px;font-weight:600;cursor:pointer;}
+  .sc-book-btn:hover{opacity:0.9;}
+  .sc-pricing{margin:0 20px 18px;padding:10px 14px;background:#0A0A14;border:1px solid #1A1A2A;border-radius:8px;text-align:center;font-size:11px;color:#5050A0;font-family:'DM Mono',monospace;}
+  .sc-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1A2A1A;border:1px solid #25D366;color:#25D366;padding:8px 18px;border-radius:20px;font-size:12px;white-space:nowrap;z-index:100;display:none;}
+</style>
+</head>
+<body>
+<div class="sc-root" id="sc-app">
+
+  <!-- STEP 1: INPUT -->
+  <div id="sc-step-input" class="sc-input-wrap">
+    <div class="sc-logo">
+      <div class="sc-logo-mark">S</div>
+      <span class="sc-logo-text">ScreenCity · AI Preview Engine</span>
+    </div>
+    <h2 class="sc-title">See your ad live on screen</h2>
+    <p class="sc-sub">Enter your business info. AI generates 3 ad variants and shows you exactly how they'd look on our screens in your city — in under 30 seconds.</p>
+
+    <div class="sc-field">
+      <label class="sc-label">Business name *</label>
+      <input class="sc-input" id="f-name" type="text" placeholder="e.g. Ristorante da Marco"/>
+    </div>
+    <div class="sc-row sc-field">
+      <div>
+        <label class="sc-label">Sector</label>
+        <select class="sc-input" id="f-sector">
+          <option>Restaurant / Café</option><option>Retail / Fashion</option>
+          <option>Wellness & Beauty</option><option>Fitness & Sport</option>
+          <option>Medical / Health</option><option>Real Estate</option>
+          <option>Automotive</option><option>Finance / Insurance</option>
+          <option>Hotel & Tourism</option><option>Education</option>
+          <option>Technology</option><option>Other</option>
+        </select>
+      </div>
+      <div>
+        <label class="sc-label">Screen city</label>
+        <select class="sc-input" id="f-city">
+          <option>St. Gallen</option><option>Heilbronn</option>
+        </select>
+      </div>
+    </div>
+    <div class="sc-field">
+      <label class="sc-label">What do you want to communicate? *</label>
+      <textarea class="sc-input" id="f-msg" rows="3" placeholder="e.g. Best pizza in town, lunch menu €10, free delivery weekends"></textarea>
+    </div>
+
+    <div id="sc-err" class="sc-error" style="display:none"></div>
+    <button class="sc-btn" id="sc-gen-btn" onclick="runGenerate()">Generate my ad preview →</button>
+  </div>
+
+  <!-- STEP 2: LOADING -->
+  <div id="sc-step-loading" style="display:none;padding:60px 28px;text-align:center;">
+    <div style="width:48px;height:48px;background:linear-gradient(135deg,#F5A623,#E8621A);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:white;margin:0 auto 20px;">S</div>
+    <div style="font-size:16px;font-weight:500;color:#E0E0F0;margin-bottom:8px;" id="sc-loading-msg">Analysing business profile...</div>
+    <div style="font-size:12px;color:#5050A0;font-family:'DM Mono',monospace;" id="sc-loading-sub">AI creative engine running</div>
+    <div style="margin:24px auto;width:180px;height:3px;background:#1A1A2A;border-radius:2px;overflow:hidden;">
+      <div id="sc-progress-bar" style="height:100%;background:linear-gradient(90deg,#F5A623,#E8621A);width:0%;transition:width 0.4s ease;border-radius:2px;"></div>
+    </div>
+  </div>
+
+  <!-- STEP 3: PREVIEW -->
+  <div id="sc-step-preview" style="display:none;">
+    <div class="sc-preview-header">
+      <div>
+        <div class="sc-preview-title" id="pv-title">Business Name — St. Gallen</div>
+        <div class="sc-preview-sub" id="pv-sub">3 variants generated · select to preview</div>
+      </div>
+      <button class="sc-back" onclick="goBack()">← New business</button>
+    </div>
+    <div class="sc-street" id="sc-street-wrap">
+      <canvas id="sc-canvas" style="width:100%;height:100%;display:block;"></canvas>
+    </div>
+    <div class="sc-variants" id="sc-variants-row"></div>
+    <div class="sc-copy-panel" id="sc-copy-panel"></div>
+    <div class="sc-actions">
+      <button class="sc-wa-btn" onclick="showToast('✓ Preview sent via WhatsApp Business API')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        Send preview via WhatsApp
+      </button>
+      <button class="sc-book-btn" onclick="showToast('🎉 Redirecting to campaign booking...')">Book this campaign →</button>
+    </div>
+    <div class="sc-pricing">from €3 / day &nbsp;·&nbsp; no contracts &nbsp;·&nbsp; live within 24h &nbsp;·&nbsp; cancel anytime</div>
+  </div>
+
+</div>
+<div id="sc-toast" class="sc-toast"></div>
+
+<script>
+let currentVariants = [], activeIdx = 0, loadingInterval = null, progressInterval = null;
+
+const MSGS = [
+  ["Analysing business profile...","Extracting brand identity"],
+  ["Generating creative concepts...","3 distinct visual directions"],
+  ["Calibrating for DOOH format...","Optimising for outdoor readability"],
+  ["Colour-grading your variants...","High contrast outdoor palette"],
+  ["Rendering your preview...","Almost there"]
+];
+
+function showToast(msg) {
+  const t = document.getElementById('sc-toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 2800);
+}
+
+function goBack() {
+  document.getElementById('sc-step-preview').style.display = 'none';
+  document.getElementById('sc-step-input').style.display = 'block';
+}
+
+async function runGenerate() {
+  const name = document.getElementById('f-name').value.trim();
+  const sector = document.getElementById('f-sector').value;
+  const city = document.getElementById('f-city').value;
+  const msg = document.getElementById('f-msg').value.trim();
+  const errEl = document.getElementById('sc-err');
+
+  if (!name || !msg) {
+    errEl.textContent = 'Please fill in the business name and message fields.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  document.getElementById('sc-step-input').style.display = 'none';
+  document.getElementById('sc-step-loading').style.display = 'block';
+
+  let msgIdx = 0, prog = 0;
+  const pbar = document.getElementById('sc-progress-bar');
+  pbar.style.width = '0%';
+
+  loadingInterval = setInterval(() => {
+    msgIdx = (msgIdx + 1) % MSGS.length;
+    document.getElementById('sc-loading-msg').textContent = MSGS[msgIdx][0];
+    document.getElementById('sc-loading-sub').textContent = MSGS[msgIdx][1];
+  }, 1800);
+
+  progressInterval = setInterval(() => {
+    prog = Math.min(prog + Math.random() * 8, 90);
+    pbar.style.width = prog + '%';
+  }, 400);
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, sector, city, msg })
+    });
+
+    const data = await res.json();
+    clearInterval(loadingInterval); clearInterval(progressInterval);
+    pbar.style.width = '100%';
+
+    if (data.error) throw new Error(data.error);
+
+    currentVariants = data.variants;
+    activeIdx = 0;
+
+    await new Promise(r => setTimeout(r, 300));
+    document.getElementById('sc-step-loading').style.display = 'none';
+    document.getElementById('sc-step-preview').style.display = 'block';
+    document.getElementById('pv-title').textContent = `${name} — ${city}`;
+    document.getElementById('pv-sub').textContent = `${currentVariants.length} variants generated · select to preview`;
+
+    renderVariantCards();
+    renderCopyPanel();
+    drawStreetScene(city, currentVariants[0]);
+
+  } catch(e) {
+    clearInterval(loadingInterval); clearInterval(progressInterval);
+    document.getElementById('sc-step-loading').style.display = 'none';
+    document.getElementById('sc-step-input').style.display = 'block';
+    errEl.textContent = 'Generation failed: ' + e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+function renderVariantCards() {
+  const row = document.getElementById('sc-variants-row');
+  row.innerHTML = '';
+  currentVariants.forEach((v, i) => {
+    const card = document.createElement('div');
+    card.className = 'sc-vcard';
+    card.style.background = i === activeIdx ? v.bg_color + '22' : '#0E0E1A';
+    card.style.borderColor = i === activeIdx ? v.accent_color : '#1E1E30';
+    card.innerHTML = `
+      <div class="sc-vcard-label" style="color:${i===activeIdx?v.accent_color:'#8080B0'}">${v.label}</div>
+      <div class="sc-vcard-mood">${v.mood}</div>
+      <div class="sc-vcard-swatch" style="background:${v.accent_color}"></div>`;
+    card.onclick = () => { activeIdx = i; renderVariantCards(); renderCopyPanel(); drawStreetScene(null, currentVariants[i]); };
+    row.appendChild(card);
+  });
+}
+
+function renderCopyPanel() {
+  const v = currentVariants[activeIdx];
+  document.getElementById('sc-copy-panel').innerHTML = `
+    <div><div class="sc-copy-key">Headline</div><div class="sc-copy-val">${v.headline}</div></div>
+    <div><div class="sc-copy-key">Subline</div><div class="sc-copy-val">${v.subline}</div></div>
+    <div><div class="sc-copy-key">CTA</div><div class="sc-copy-val">${v.cta}</div></div>`;
+}
+
+function drawStreetScene(city, variant) {
+  const wrap = document.getElementById('sc-street-wrap');
+  const canvas = document.getElementById('sc-canvas');
+  const dpr = window.devicePixelRatio || 1;
+  const W = wrap.offsetWidth;
+  const H = Math.round(W * 7/16);
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const sky = ctx.createLinearGradient(0,0,0,H*0.65);
+  sky.addColorStop(0,'#06090F'); sky.addColorStop(0.3,'#0D1B30');
+  sky.addColorStop(0.6,'#1E3A5A'); sky.addColorStop(0.85,'#4A6A2A'); sky.addColorStop(1,'#2A3A18');
+  ctx.fillStyle = sky; ctx.fillRect(0,0,W,H*0.65);
+
+  [[0.08,0.06],[0.15,0.12],[0.22,0.04],[0.31,0.09],[0.40,0.03],[0.52,0.07],[0.64,0.11],[0.71,0.05],[0.80,0.08],[0.89,0.04],[0.95,0.13],[0.12,0.18],[0.35,0.15],[0.58,0.02],[0.75,0.16],[0.48,0.14],[0.27,0.02],[0.84,0.17]].forEach(([sx,sy]) => {
+    ctx.fillStyle=`rgba(255,255,255,${0.3+Math.random()*0.5})`; ctx.beginPath(); ctx.arc(sx*W,sy*H,0.8+Math.random()*0.8,0,Math.PI*2); ctx.fill();
+  });
+
+  ctx.fillStyle='rgba(255,248,220,0.9)'; ctx.beginPath(); ctx.arc(W*0.87,H*0.08,W*0.018,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#0D1B30'; ctx.beginPath(); ctx.arc(W*0.875,H*0.075,W*0.014,0,Math.PI*2); ctx.fill();
+
+  const gnd = ctx.createLinearGradient(0,H*0.62,0,H);
+  gnd.addColorStop(0,'#1A2010'); gnd.addColorStop(0.15,'#252E18'); gnd.addColorStop(0.3,'#3A3A2A'); gnd.addColorStop(1,'#1E1E16');
+  ctx.fillStyle=gnd; ctx.fillRect(0,H*0.62,W,H*0.38);
+  ctx.fillStyle='#141414'; ctx.fillRect(0,H*0.72,W,H*0.28);
+  ctx.strokeStyle='rgba(255,255,200,0.35)'; ctx.setLineDash([W*0.05,W*0.04]); ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(0,H*0.82); ctx.lineTo(W,H*0.82); ctx.stroke(); ctx.setLineDash([]);
+
+  function building(x,y,w,h,color,winColor,rows,cols){
+    ctx.fillStyle=color; ctx.fillRect(x,y,w,h);
+    const wp=w/(cols+1),hp=h/(rows+1);
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+      ctx.fillStyle=Math.random()>0.35?winColor:'rgba(255,255,200,0.04)';
+      ctx.fillRect(x+wp*(c+0.5)+wp*0.05,y+hp*(r+0.5),wp*0.5,hp*0.45);
+    }
+  }
+  building(0,H*0.12,W*0.12,H*0.55,'#1C2018','rgba(255,230,120,0.7)',6,2);
+  building(W*0.10,H*0.20,W*0.09,H*0.47,'#222820','rgba(200,240,255,0.5)',5,2);
+  building(W*0.17,H*0.08,W*0.10,H*0.59,'#181E14','rgba(255,230,120,0.6)',7,2);
+  building(W*0.73,H*0.15,W*0.12,H*0.52,'#1C2018','rgba(255,230,120,0.65)',6,2);
+  building(W*0.83,H*0.22,W*0.09,H*0.45,'#202818','rgba(200,240,255,0.45)',4,2);
+  building(W*0.90,H*0.10,W*0.10,H*0.57,'#181A14','rgba(255,230,120,0.55)',7,2);
+
+  ctx.fillStyle='#1E2018'; ctx.fillRect(W*0.28,H*0.05,W*0.44,H*0.65);
+  ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=0.5;
+  for(let i=0;i<8;i++){ctx.beginPath();ctx.moveTo(W*0.28,H*(0.05+i*0.085));ctx.lineTo(W*0.72,H*(0.05+i*0.085));ctx.stroke();}
+
+  function lamp(lx){
+    ctx.strokeStyle='#404840'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(lx,H*0.62); ctx.lineTo(lx,H*0.3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(lx,H*0.3); ctx.lineTo(lx+W*0.025,H*0.28); ctx.stroke();
+    const lg=ctx.createRadialGradient(lx+W*0.025,H*0.28,0,lx+W*0.025,H*0.28,W*0.04);
+    lg.addColorStop(0,'rgba(255,230,150,0.7)'); lg.addColorStop(1,'rgba(255,230,150,0)');
+    ctx.fillStyle=lg; ctx.beginPath(); ctx.arc(lx+W*0.025,H*0.28,W*0.04,0,Math.PI*2); ctx.fill();
+  }
+  lamp(W*0.24); lamp(W*0.76);
+
+  const sw=W*0.30,sh=sw*9/16,sx=(W-sw)/2,sy=H*0.12,br=4;
+  const glowR=ctx.createRadialGradient(sx+sw/2,sy+sh/2,0,sx+sw/2,sy+sh/2,sw*0.8);
+  glowR.addColorStop(0,hexToRGBA(variant.accent_color,0.3)); glowR.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=glowR; ctx.fillRect(sx-sw*0.5,sy-sh*0.5,sw*2,sh*2);
+
+  ctx.fillStyle='#0A0A0A'; roundRect(ctx,sx-8,sy-8,sw+16,sh+16,6); ctx.fill();
+  ctx.strokeStyle='#333'; ctx.lineWidth=0.5; roundRect(ctx,sx-8,sy-8,sw+16,sh+16,6); ctx.stroke();
+
+  ctx.save(); roundRect(ctx,sx,sy,sw,sh,br); ctx.clip();
+  ctx.fillStyle=variant.bg_color; ctx.fillRect(sx,sy,sw,sh);
+  ctx.fillStyle=variant.accent_color; ctx.fillRect(sx+sw*0.06,sy+sh*0.14,sw*0.06,sh*0.05);
+  ctx.fillStyle=variant.text_color; ctx.font=`700 ${Math.round(sh*0.19)}px 'DM Sans',sans-serif`;
+  ctx.fillText(variant.headline,sx+sw*0.06,sy+sh*0.38);
+  ctx.globalAlpha=0.85; ctx.font=`400 ${Math.round(sh*0.10)}px 'DM Sans',sans-serif`;
+  const sw2=variant.subline.split(' '), l1=sw2.slice(0,Math.ceil(sw2.length/2)).join(' '), l2=sw2.slice(Math.ceil(sw2.length/2)).join(' ');
+  ctx.fillText(l1,sx+sw*0.06,sy+sh*0.52); if(l2) ctx.fillText(l2,sx+sw*0.06,sy+sh*0.63);
+  ctx.globalAlpha=1;
+  ctx.fillStyle=variant.accent_color; roundRect(ctx,sx+sw*0.06,sy+sh*0.73,sw*0.42,sh*0.16,3); ctx.fill();
+  ctx.fillStyle=variant.bg_color; ctx.font=`600 ${Math.round(sh*0.09)}px 'DM Sans',sans-serif`;
+  ctx.fillText(variant.cta,sx+sw*0.13,sy+sh*0.84);
+  ctx.globalAlpha=0.4; ctx.fillStyle=variant.text_color; ctx.font=`400 ${Math.round(sh*0.07)}px 'DM Mono',monospace`;
+  ctx.fillText('ScreenCity',sx+sw*0.62,sy+sh*0.88); ctx.globalAlpha=1;
+  const gl=ctx.createLinearGradient(sx,sy,sx+sw*0.6,sy+sh*0.4);
+  gl.addColorStop(0,'rgba(255,255,255,0.07)'); gl.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=gl; ctx.fillRect(sx,sy,sw,sh);
+  ctx.restore();
+
+  ctx.fillStyle='#2A2A2A';
+  ctx.fillRect(sx+sw*0.42,sy+sh+8,sw*0.16,10);
+  ctx.fillRect(sx+sw*0.47,sy+sh+18,sw*0.06,18);
+
+  const cityName = document.getElementById('f-city').value || city || 'St. Gallen';
+  ctx.fillStyle='rgba(0,0,0,0.55)'; roundRect(ctx,W-120,H-30,110,22,11); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.7)'; ctx.font=`400 11px 'DM Mono',monospace`;
+  ctx.fillText(`📍 ${cityName}`,W-112,H-15);
+}
+
+function hexToRGBA(hex,a){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+window.addEventListener('resize',()=>{
+  if(currentVariants.length>0 && document.getElementById('sc-step-preview').style.display!=='none')
+    drawStreetScene(null,currentVariants[activeIdx]);
+});
+</script>
+</body>
+</html>
