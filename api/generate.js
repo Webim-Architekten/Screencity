@@ -10,19 +10,15 @@ export default async function handler(req, res) {
   if (!name || !msg) return res.status(400).json({ error: 'Missing required fields' });
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1200,
-        messages: [{
-          role: 'user',
-          content: `You are a world-class DOOH (Digital Out-of-Home) creative director. Generate exactly 3 distinct ad variants for a digital outdoor screen. Each variant must have a completely different creative personality.
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `You are a world-class DOOH (Digital Out-of-Home) creative director. Generate exactly 3 distinct ad variants for a digital outdoor screen.
 
 Business: ${name}
 Sector: ${sector}
@@ -51,11 +47,20 @@ Rules:
 - Variant 3: Vibrant/friendly — warm energetic colors
 - ALL text optimised for 10m outdoor readability
 - Colors must be high-contrast always`
-        }]
-      })
-    });
+            }]
+          }]
+        })
+      }
+    );
 
     const data = await response.json();
     if (data.error) return res.status(500).json({ error: data.error.message });
 
-    const text = data.content[0].text.trim().replace(/```
+    let text = data.candidates[0].content.parts[0].text.trim();
+    text = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(text);
+    res.status(200).json(parsed);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+}
