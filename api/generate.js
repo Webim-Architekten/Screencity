@@ -10,15 +10,18 @@ export default async function handler(req, res) {
   if (!name || !msg) return res.status(400).json({ error: 'Missing required fields' });
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `You are a world-class DOOH (Digital Out-of-Home) creative director. Generate exactly 3 distinct ad variants for a digital outdoor screen.
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 1200,
+        messages: [{
+          role: 'user',
+          content: `You are a world-class DOOH creative director. Generate exactly 3 distinct ad variants for a digital outdoor screen.
 
 Business: ${name}
 Sector: ${sector}
@@ -26,38 +29,21 @@ Message/Offer: ${msg}
 City: ${city}
 
 RESPOND WITH ONLY VALID JSON — no markdown, no backticks, no explanation:
-{
-  "variants": [
-    {
-      "label": "Short creative direction name (2-3 words)",
-      "headline": "Max 4 bold words — punchy, immediate, readable at 10m",
-      "subline": "Max 8 words — support the headline, include the key offer",
-      "cta": "2-3 words action phrase",
-      "bg_color": "#hex",
-      "text_color": "#hex",
-      "accent_color": "#hex",
-      "mood": "bold | elegant | vibrant"
-    }
-  ]
-}
+{"variants":[{"label":"2-3 words","headline":"Max 4 bold words","subline":"Max 8 words with key offer","cta":"2-3 words","bg_color":"#hex","text_color":"#hex","accent_color":"#hex","mood":"bold"}]}
 
 Rules:
 - Variant 1: Bold/modern — dark background, strong contrast
 - Variant 2: Elegant/premium — refined palette, upscale feel
 - Variant 3: Vibrant/friendly — warm energetic colors
-- ALL text optimised for 10m outdoor readability
-- Colors must be high-contrast always`
-            }]
-          }]
-        })
-      }
-    );
+- High contrast colors always`
+        }]
+      })
+    });
 
     const data = await response.json();
     if (data.error) return res.status(500).json({ error: data.error.message });
 
-    let text = data.candidates[0].content.parts[0].text.trim();
-    text = text.replace(/```json|```/g, '').trim();
+    let text = data.choices[0].message.content.trim().replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(text);
     res.status(200).json(parsed);
   } catch (e) {
